@@ -1,14 +1,23 @@
 from flask import Flask, render_template
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from database_setup import Base, Category, Item
+
+#create Flask app
 app = Flask(__name__)
+
+#bind to database with SQLalchemy
+engine = create_engine('sqlite:///catalog.db')
+Base.metadata.bind = engine
 
 @app.route('/')
 def showCatalog():
-    return "This page will show all categories and latest items"
+    return render_template('catalog.html')
 
-@app.route('/catalog')
+@app.route('/category')
 #To-DO - add category name in route
 def showCategories():
-    return "This page will show a specific categories"
+    return "This page will show a specific category"
 
 @app.route('/item')
 #To-DO - add category name and item in route
@@ -29,6 +38,11 @@ def editItem():
 #To-DO - add category name and item in route
 def deleteItem():
     return "This page will allow a logged in user to delete a specific item"
+
+@app.route('/item/JSON')
+#To-DO - add category name and item in route
+def jsonItem():
+    return "This page will allow an api json endpoint"
 
 if __name__ == "__main__":
     app.debug = True
