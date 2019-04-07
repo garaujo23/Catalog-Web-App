@@ -5,5 +5,12 @@
 
     <body>
         <h1>Category</h1>
+
+        <div>
+            {% for i in category %}
+            <p>{{i.title}}</p>
+            {% endfor %}
+        </div>
+        
     </body>
 </html>

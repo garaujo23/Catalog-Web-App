@@ -2,6 +2,7 @@ from flask import Flask, render_template
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database_setup import Base, Category, Item
+import datetime
 
 #create Flask app
 app = Flask(__name__)
@@ -12,17 +13,29 @@ Base.metadata.bind = engine
 
 @app.route('/')
 def showCatalog():
-    return render_template('catalog.html')
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
+    catalog = session.query(Category).all()
+    session.close()
+    return render_template('catalog.html', category = catalog)
 
-@app.route('/category')
-#To-DO - add category name in route
-def showCategories():
-    return "This page will show a specific category"
+@app.route('/category/<string:category_title>/items')
+def showCategories(category_title):
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
+    catalog = session.query(Category).filter_by(title=category_title).one()
+    #items = session.query(Item).filter_by(category=category_title).all()
+    session.close()
+    return render_template('category.html', category = catalog)
 
-@app.route('/item')
-#To-DO - add category name and item in route
-def showItem():
-    return "This page will show a specific item"
+@app.route('/category/<string:category_title>/<string:item_title>')
+def showItem(category_title, item_title):
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
+    catalog = session.query(Category).filter_by(title=category_title).one()
+    item = session.query(Item).filter_by(title=item_title).one()
+    session.close()
+    return render_template('item.html', category = catalog, item = item)
 
 @app.route('/item/new')
 #To-DO - add category name and item in route
