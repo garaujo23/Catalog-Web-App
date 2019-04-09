@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, redirect, url_for
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database_setup import Base, Category, Item
@@ -23,10 +23,10 @@ def showCatalog():
 def showCategories(category_title):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
-    catalog = session.query(Category).filter_by(title=category_title).one()
-    #items = session.query(Item).filter_by(category=category_title).all()
+    category = session.query(Category).filter_by(title=category_title).one()
+    items = session.query(Item).filter_by(category_id=category.id).all()
     session.close()
-    return render_template('category.html', category = catalog)
+    return render_template('category.html', category = category, items = items)
 
 @app.route('/category/<string:category_title>/<string:item_title>')
 def showItem(category_title, item_title):
@@ -37,10 +37,22 @@ def showItem(category_title, item_title):
     session.close()
     return render_template('item.html', category = catalog, item = item)
 
-@app.route('/item/new')
-#To-DO - add category name and item in route
-def createItem():
-    return "This page will allow a logged in user to create a specific item"
+@app.route('/item/new', methods=['GET', 'POST'])
+def newItem():
+    if request.method == 'POST':
+        now = datetime.datetime.now()
+        DBSession = sessionmaker(bind=engine)
+        session = DBSession()
+        category = session.query(Category).filter_by(title=request.form['category']).first()
+        newItem = Item(title=request.form['title'], description=request.form['description'], category=category, date_time=now.strftime("%Y-%m-%d %H:%M") )
+        session.add(newItem)
+        session.commit()
+        return redirect(url_for('showCatalog'))
+    else:
+        DBSession = sessionmaker(bind=engine)
+        session = DBSession()
+        catalog = session.query(Category).all()
+        return render_template('newitem.html', category= catalog)
 
 @app.route('/item/edit')
 #To-DO - add category name and item in route

@@ -6,7 +6,12 @@
     <body>
         <h1>{{ category.title }}</h1>
         <div>
-
+            <div>
+                {% for i in items %}
+                <p>
+                <a href = '{{url_for('showItem',category_title = category.title, item_title = i.title )}}' >{{i.title}}</a>
+                {% endfor %}</p>
+            </div>
         </div>
         
     </body>
