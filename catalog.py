@@ -33,7 +33,7 @@ def showItem(category_title, item_title):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     catalog = session.query(Category).filter_by(title=category_title).one()
-    item = session.query(Item).filter_by(title=item_title).one()
+    item = session.query(Item).filter_by(title=item_title).first()
     session.close()
     return render_template('item.html', category = catalog, item = item)
 
@@ -54,12 +54,29 @@ def newItem():
         catalog = session.query(Category).all()
         return render_template('newitem.html', category= catalog)
 
-@app.route('/item/edit')
-#To-DO - add category name and item in route
-def editItem():
-    return "This page will allow a logged in user to edit a specific item"
+@app.route('/category/<string:category_title>/<string:item_title>/edit', methods=['GET', 'POST'])
+def editItem(category_title, item_title):
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
+    editItem = session.query(Item).filter_by(title=item_title).one()
+    
+    if request.method == 'POST':
+        if request.form['title']:
+            editItem.title = request.form['title']
+        if request.form['description']:
+            editItem.description = request.form['description']
+        if request.form['category']:
+            editCategory = session.query(Category).filter_by(title=request.form['category']).first()
+            editItem.category_id = editCategory.id
+        session.add(editItem)
+        session.commit()
+        return redirect(url_for('showItem', category_title = editItem.category.title, item_title = editItem.title))
+    else:
+        catalog = session.query(Category).all()
+        return render_template(
+            'edititem.html', category=catalog, item=editItem)
 
-@app.route('/item/delete')
+@app.route('/category/<string:category_title>/<string:item_title>/delete', methods=['GET', 'POST'])
 #To-DO - add category name and item in route
 def deleteItem():
     return "This page will allow a logged in user to delete a specific item"

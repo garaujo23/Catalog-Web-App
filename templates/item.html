@@ -2,7 +2,10 @@
     <head>
 
     </head>
+	<div class = "editpane">
 
+        <a href='{{url_for('editItem',category_title = category.title, item_title=item.title)}}' >Edit</a>
+        </div>
     <body>
         <h1>{{ category.title }}</h1>
         <div>
