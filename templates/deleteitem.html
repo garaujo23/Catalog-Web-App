@@ -3,9 +3,9 @@
 	
 	</head>
 <body>
-<h1> Are you sure you want to delete {{item.name}}? </h1>
+<h1> Are you sure you want to delete {{item.title}}? </h1>
 
-<form action="{{ url_for('deleteItem',item_id = item.restaurant_id, menu_id=item.id)}}" method = 'post'>
+<form action="{{ url_for('deleteItem',item_title = item.title, category_title=category.title)}}" method = 'post'>
 
 <input type='submit', value = 'Delete'>
 
@@ -14,7 +14,7 @@
 
 </form>
 
-<a href = '{{url_for('restaurantMenu', restaurant_id = item.restaurant_id)}}'> Cancel </a>
+<a href = '{{url_for('showItem', item_title = item.title, category_title = category.title)}}'> Cancel </a>
 </body>
 
 </html>

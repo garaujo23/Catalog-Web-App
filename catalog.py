@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database_setup import Base, Category, Item
@@ -43,11 +43,18 @@ def newItem():
         now = datetime.datetime.now()
         DBSession = sessionmaker(bind=engine)
         session = DBSession()
-        category = session.query(Category).filter_by(title=request.form['category']).first()
-        newItem = Item(title=request.form['title'], description=request.form['description'], category=category, date_time=now.strftime("%Y-%m-%d %H:%M") )
-        session.add(newItem)
-        session.commit()
-        return redirect(url_for('showCatalog'))
+        #Check that the item title doesnt already exist
+        check = session.query(Item.id).filter(Item.title==request.form['title'])
+        if session.query(check.exists()).scalar():
+            flash("Item already exists!")
+            catalog = session.query(Category).all()
+            return render_template('newitem.html', category= catalog)
+        else:
+            category = session.query(Category).filter_by(title=request.form['category']).first()
+            newItem = Item(title=request.form['title'], description=request.form['description'], category=category, date_time=now.strftime("%Y-%m-%d %H:%M") )
+            session.add(newItem)
+            session.commit()
+            return redirect(url_for('showCatalog'))
     else:
         DBSession = sessionmaker(bind=engine)
         session = DBSession()
@@ -73,13 +80,20 @@ def editItem(category_title, item_title):
         return redirect(url_for('showItem', category_title = editItem.category.title, item_title = editItem.title))
     else:
         catalog = session.query(Category).all()
-        return render_template(
-            'edititem.html', category=catalog, item=editItem)
+        return render_template('edititem.html', category=catalog, item=editItem)
 
 @app.route('/category/<string:category_title>/<string:item_title>/delete', methods=['GET', 'POST'])
 #To-DO - add category name and item in route
-def deleteItem():
-    return "This page will allow a logged in user to delete a specific item"
+def deleteItem(item_title,category_title):
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
+    itemToDelete = session.query(Item).filter_by(title=item_title).one()
+    if request.method == 'POST':
+        session.delete(itemToDelete)
+        session.commit()
+        return redirect(url_for('showCatalog'))
+    else:
+        return render_template('deleteitem.html', item=itemToDelete, category=itemToDelete.category)
 
 @app.route('/item/JSON')
 #To-DO - add category name and item in route
@@ -88,4 +102,5 @@ def jsonItem():
 
 if __name__ == "__main__":
     app.debug = True
+    app.secret_key = 'super_secret_key'
     app.run(host = '0.0.0.0', port = 5000)
