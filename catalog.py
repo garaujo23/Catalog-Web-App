@@ -41,7 +41,8 @@ def showItem(category_title, item_title):
 def itemJSON(item_title, category_title):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
-    item = session.query(Item).filter_by(title=item_title).one()
+    category = session.query(Category).filter_by(title=category_title).one()
+    item = session.query(Item).filter_by(title=item_title).filter_by(category_id=category.id).one()
     return jsonify(item=item.serialize)
 
 @app.route('/item/new', methods=['GET', 'POST'])
@@ -50,14 +51,16 @@ def newItem():
         now = datetime.datetime.now()
         DBSession = sessionmaker(bind=engine)
         session = DBSession()
-        #Check that the item title doesnt already exist
-        check = session.query(Item.id).filter(Item.title==request.form['title'])
+        category = session.query(Category).filter_by(title=request.form['category']).one()
+        #Check that the item title doesnt already exist in the category
+        check = session.query(Item.id).filter(Item.title==request.form['title']).filter(Item.category == category)
+        print(check)
         if session.query(check.exists()).scalar():
             flash("Item already exists!")
             catalog = session.query(Category).all()
             return render_template('newitem.html', category= catalog)
         else:
-            category = session.query(Category).filter_by(title=request.form['category']).first()
+            category = session.query(Category).filter_by(title=request.form['category']).one()
             newItem = Item(title=request.form['title'], description=request.form['description'], category=category, date_time=now.strftime("%Y-%m-%d %H:%M") )
             session.add(newItem)
             session.commit()
