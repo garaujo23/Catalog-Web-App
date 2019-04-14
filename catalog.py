@@ -11,6 +11,15 @@ app = Flask(__name__)
 engine = create_engine('sqlite:///catalog.db')
 Base.metadata.bind = engine
 
+#To check if an item is already that category in the database
+def checkItem(item_title, category_title):
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
+    category = session.query(Category).filter_by(title=category_title).one()
+    check = session.query(Item.id).filter(Item.title==item_title).filter(Item.category == category)
+    return session.query(check.exists()).scalar()
+
+
 @app.route('/')
 def showCatalog():
     DBSession = sessionmaker(bind=engine)
@@ -51,11 +60,7 @@ def newItem():
         now = datetime.datetime.now()
         DBSession = sessionmaker(bind=engine)
         session = DBSession()
-        category = session.query(Category).filter_by(title=request.form['category']).one()
-        #Check that the item title doesnt already exist in the category
-        check = session.query(Item.id).filter(Item.title==request.form['title']).filter(Item.category == category)
-        print(check)
-        if session.query(check.exists()).scalar():
+        if checkItem(request.form['title'],request.form['category']):
             flash("Item already exists!")
             catalog = session.query(Category).all()
             return render_template('newitem.html', category= catalog)
@@ -75,40 +80,39 @@ def newItem():
 def editItem(category_title, item_title):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
-    editItem = session.query(Item).filter_by(title=item_title).one()
-    
+    catalog = session.query(Category).all()
+    category = session.query(Category).filter_by(title=category_title).one()
+    editItem = session.query(Item).filter_by(title=item_title).filter_by(category_id=category.id).one()
     if request.method == 'POST':
-        if request.form['title']:
-            editItem.title = request.form['title']
-        if request.form['description']:
-            editItem.description = request.form['description']
-        if request.form['category']:
-            editCategory = session.query(Category).filter_by(title=request.form['category']).first()
-            editItem.category_id = editCategory.id
-        session.add(editItem)
-        session.commit()
-        return redirect(url_for('showItem', category_title = editItem.category.title, item_title = editItem.title))
+        if checkItem(request.form['title'], request.form['category']):
+            flash("Item already exists!")
+            return render_template('edititem.html', category = catalog, category_title=category_title, item=editItem)
+        else:
+            if request.form['title']:
+                editItem.title = request.form['title']
+            if request.form['description']:
+                editItem.description = request.form['description']
+            if request.form['category']:
+                editCategory = session.query(Category).filter_by(title=request.form['category']).first()
+                editItem.category_id = editCategory.id
+            session.add(editItem)
+            session.commit()
+            return redirect(url_for('showItem', category_title = editItem.category.title, item_title = editItem.title))
     else:
-        catalog = session.query(Category).all()
-        return render_template('edititem.html', category=catalog, item=editItem)
+        return render_template('edititem.html', category = catalog, category_title=category_title, item=editItem)
 
 @app.route('/category/<string:category_title>/<string:item_title>/delete', methods=['GET', 'POST'])
-#To-DO - add category name and item in route
 def deleteItem(item_title,category_title):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
-    itemToDelete = session.query(Item).filter_by(title=item_title).one()
+    category = session.query(Category).filter_by(title=category_title).one()
+    itemToDelete = session.query(Item).filter_by(title=item_title).filter_by(category_id=category.id).one()
     if request.method == 'POST':
         session.delete(itemToDelete)
         session.commit()
         return redirect(url_for('showCatalog'))
     else:
         return render_template('deleteitem.html', item=itemToDelete, category=itemToDelete.category)
-
-@app.route('/item/JSON')
-#To-DO - add category name and item in route
-def jsonItem():
-    return "This page will allow an api json endpoint"
 
 if __name__ == "__main__":
     app.debug = True
