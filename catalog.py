@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database_setup import Base, Category, Item
@@ -36,6 +36,13 @@ def showItem(category_title, item_title):
     item = session.query(Item).filter_by(title=item_title).first()
     session.close()
     return render_template('item.html', category = catalog, item = item)
+
+@app.route('/category/<string:category_title>/<string:item_title>.json')
+def itemJSON(item_title, category_title):
+    DBSession = sessionmaker(bind=engine)
+    session = DBSession()
+    item = session.query(Item).filter_by(title=item_title).one()
+    return jsonify(item=item.serialize)
 
 @app.route('/item/new', methods=['GET', 'POST'])
 def newItem():
