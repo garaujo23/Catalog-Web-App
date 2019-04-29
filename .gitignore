@@ -1,3 +1,4 @@
 #exclude the created database
 .db
 *.pyc
+.json
