@@ -21,9 +21,7 @@ app = Flask(__name__)
 engine = create_engine('sqlite:///catalog.db')
 Base.metadata.bind = engine
 
-# To check if an item is already that category in the database
-
-
+#To check if an item is already in that category with the same name in the database
 def checkItem(item_title, category_title):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
@@ -32,7 +30,7 @@ def checkItem(item_title, category_title):
         Item.title == item_title).filter(Item.category == category)
     return session.query(check.exists()).scalar()
 
-
+#Login page
 @app.route('/login')
 def showLogin():
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
@@ -40,6 +38,7 @@ def showLogin():
     login_session['state'] = state
     return render_template('login.html', STATE=state)
 
+#Oauth method for Google sign in
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
     # Validate state token
@@ -52,7 +51,7 @@ def gconnect():
 
     try:
         # Upgrade the authorization code into a credentials object
-        oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='')
+        oauth_flow = flow_from_clientsecrets('../client_secrets.json', scope='')
         oauth_flow.redirect_uri = 'postmessage'
         credentials = oauth_flow.step2_exchange(code)
     except FlowExchangeError:
@@ -123,6 +122,37 @@ def gconnect():
     print "done!"
     return output
 
+#Revoke auth/sign out
+@app.route('/gdisconnect')
+def gdisconnect():
+    access_token = login_session['access_token']
+    print 'In gdisconnect access token is %s', access_token
+    print 'User name is: ' 
+    print login_session['username']
+    if access_token is None:
+ 	print 'Access Token is None'
+    	response = make_response(json.dumps('Current user not connected.'), 401)
+    	response.headers['Content-Type'] = 'application/json'
+    	return response
+    url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % login_session['access_token']
+    h = httplib2.Http()
+    result = h.request(url, 'GET')[0]
+    print 'result is '
+    print result
+    if result['status'] == '200':
+        del login_session['access_token'] 
+    	del login_session['username']
+    	del login_session['email']
+    	del login_session['picture']
+    	response = make_response(json.dumps('Successfully disconnected.'), 200)
+    	response.headers['Content-Type'] = 'application/json'
+    	return response
+    else:
+    	response = make_response(json.dumps('Failed to revoke token for given user.', 400))
+    	response.headers['Content-Type'] = 'application/json'
+    	return response
+
+#Home page showing categories and items
 @app.route('/')
 def showCatalog():
     DBSession = sessionmaker(bind=engine)
@@ -131,7 +161,7 @@ def showCatalog():
     session.close()
     return render_template('catalog.html', category=catalog)
 
-
+#Show all items in category
 @app.route('/category/<string:category_title>/items')
 def showCategories(category_title):
     DBSession = sessionmaker(bind=engine)
@@ -141,7 +171,7 @@ def showCategories(category_title):
     session.close()
     return render_template('category.html', category=category, items=items)
 
-
+#Show a specific item
 @app.route('/category/<string:category_title>/<string:item_title>')
 def showItem(category_title, item_title):
     DBSession = sessionmaker(bind=engine)
@@ -151,7 +181,7 @@ def showItem(category_title, item_title):
     session.close()
     return render_template('item.html', category=catalog, item=item)
 
-
+#JSON endpoint to get item information
 @app.route('/category/<string:category_title>/<string:item_title>.json')
 def itemJSON(item_title, category_title):
     DBSession = sessionmaker(bind=engine)
@@ -159,11 +189,14 @@ def itemJSON(item_title, category_title):
     category = session.query(Category).filter_by(title=category_title).one()
     item = session.query(Item).filter_by(
         title=item_title).filter_by(category_id=category.id).one()
+    session.close()
     return jsonify(item=item.serialize)
 
-
+#Add a new item if logged in
 @app.route('/item/new', methods=['GET', 'POST'])
 def newItem():
+    if 'username' not in login_session:
+        return redirect('/login')
     if request.method == 'POST':
         now = datetime.datetime.now()
         DBSession = sessionmaker(bind=engine)
@@ -171,6 +204,7 @@ def newItem():
         if checkItem(request.form['title'], request.form['category']):
             flash("Item already exists!")
             catalog = session.query(Category).all()
+            session.close()
             return render_template('newitem.html', category=catalog)
         else:
             category = session.query(Category).filter_by(
@@ -179,16 +213,20 @@ def newItem():
                            category=category, date_time=now.strftime("%Y-%m-%d %H:%M"))
             session.add(newItem)
             session.commit()
+            session.close()
             return redirect(url_for('showCatalog'))
     else:
         DBSession = sessionmaker(bind=engine)
         session = DBSession()
         catalog = session.query(Category).all()
+        session.close()
         return render_template('newitem.html', category=catalog)
 
-
+#Edit item if logged in
 @app.route('/category/<string:category_title>/<string:item_title>/edit', methods=['GET', 'POST'])
 def editItem(category_title, item_title):
+    if 'username' not in login_session:
+        return redirect('/login')
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     catalog = session.query(Category).all()
@@ -210,13 +248,16 @@ def editItem(category_title, item_title):
                 editItem.category_id = editCategory.id
             session.add(editItem)
             session.commit()
+            session.close()
             return redirect(url_for('showItem', category_title=editItem.category.title, item_title=editItem.title))
     else:
         return render_template('edititem.html', category=catalog, category_title=category_title, item=editItem)
 
-
+#Delete item if logged in
 @app.route('/category/<string:category_title>/<string:item_title>/delete', methods=['GET', 'POST'])
 def deleteItem(item_title, category_title):
+    if 'username' not in login_session:
+        return redirect('/login')
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
     category = session.query(Category).filter_by(title=category_title).one()
@@ -225,6 +266,7 @@ def deleteItem(item_title, category_title):
     if request.method == 'POST':
         session.delete(itemToDelete)
         session.commit()
+        session.close()
         return redirect(url_for('showCatalog'))
     else:
         return render_template('deleteitem.html', item=itemToDelete, category=itemToDelete.category)

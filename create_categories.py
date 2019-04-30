@@ -25,7 +25,6 @@ def main():
     if conn is not None:
         cursor = conn.cursor()
         cursor.executemany("insert into category values (?,?);", categories)
-        #cursor.executemany("insert into item values (?,?,?,?,?);", item)
         conn.commit()
         conn.close
     else:
