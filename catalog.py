@@ -18,8 +18,7 @@ import requests
 # create Flask app
 app = Flask(__name__)
 # Google sign in ID
-client_id = '198020618168-a4ieutk5gt8bhc59l2jorugjd62jijvn\
-                 .apps.googleusercontent.com'
+id = '198020618168-a4ieutk5gt8bhc59l2jorugjd62jijvn.apps.googleusercontent.com'
 
 # bind to database with SQLalchemy
 engine = create_engine('sqlite:///catalog.db')
@@ -89,7 +88,7 @@ def gconnect():
         return response
 
     # Verify that the access token is valid for this app.
-    if result['issued_to'] != client_id:
+    if result['issued_to'] != id:
         response = make_response(
             json.dumps("Token's client ID does not match app's."), 401)
         print "Token's client ID does not match app's."
@@ -143,11 +142,8 @@ def gdisconnect():
     print 'User name is: '
     print login_session['username']
     if access_token is None:
-        print 'Access Token is None'
-        response = make_response(json.dumps('Current user not connected.'),
-                                 401)
-    	response.headers['Content-Type'] = 'application/json'
-        return response
+        response = 'Current user not connected.'
+        return render_template('logout.html', response=response)
     url = 'https://accounts.google.com/o/oauth2/revoke?token=%s'\
         % login_session['access_token']
     h = httplib2.Http()
@@ -159,14 +155,12 @@ def gdisconnect():
         del login_session['username']
         del login_session['email']
         del login_session['picture']
-        response = make_response(json.dumps('Successfully disconnected.'), 200)
-        response.headers['Content-Type'] = 'application/json'
-        return response
+        response = 'Successfully logged out'
+        return render_template('logout.html', response=response)
     else:
-        response = make_response(json.dumps('Failed to revoke\
-            token for given user.', 400))
-        response.headers['Content-Type'] = 'application/json'
-        return response
+        response = 'Failed to revoke\
+            token for given user'
+        return render_template('logout.html', response=response)
 
 
 # Home page showing categories and items
