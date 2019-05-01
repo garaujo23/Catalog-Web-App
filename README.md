@@ -23,7 +23,7 @@ The creation of the database and categories are only required for the initial in
 python database_setup.py
 ```
 
-Database contains two tables, Category with id and title columns and Items with id, title, description, category_id, cateogroty and date_time. To populate categories run:
+Database contains two tables, Category with id and title columns and Items with id, title, description, category_id, category and date_time. To populate categories run:
 
 ```command
 python create_categories.py
@@ -39,4 +39,4 @@ To run the web app:
 python catalog.py
 ```
 
-Open a browser and go to http://localhost:5000 to view the application.
+Open a browser and go to <http://localhost:5000> to view the application.

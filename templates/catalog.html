@@ -12,7 +12,17 @@
             <a href = '{{url_for('showCategories',category_title = i.title)}}' >{{i.title}}</a>
             {% endfor %}</p>
         </div>
+
+        <div>
+            {% for i in items %}
+            <p>
+            <a href = '{{url_for('showItem',category_title = i.category.title, item_title = i.title)}}' >{{i.title}}</a> ({{i.category.title}})
+            {% endfor %}</p>
+        </div>
         
         <a href = '{{url_for('newItem')}}'>Create New Item</a>
+
+        <a href='{{url_for('gdisconnect')}}' >Logout</a>
+        </div>
     </body>
 </html>

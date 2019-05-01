@@ -56,7 +56,7 @@
       });
     </script>
 
-    <a href="#" onclick="signOut();">Sign out</a>
+    <a href="{{url_for('gdisconnect')}}" onclick="signOut();">Sign out</a>
     <script>
       function signOut() {
         var auth2 = gapi.auth2.getAuthInstance();
