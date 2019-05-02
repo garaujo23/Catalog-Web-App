@@ -29,7 +29,7 @@
                         <dd><textarea name = 'description' rows='5' cols='40' required></textarea></dd>
             <dt>Category:</dt>
                         {% for i in category %}
-                        <dd><input type ='radio' name='category' value= {{ i.title }} checked>{{ i.title }}</dd>
+                        <dd><input type ='radio' name='category' value= '{{ i.title }}'checked>{{ i.title }}</dd>
                         {% endfor %}
                         <!--<dd><input type ='radio' name='category' value='Cricket' checked>Cricket</dd>
                         <dd><input type ='radio' name='category' value='Entree'>Entree</dd>

@@ -29,6 +29,7 @@ Base.metadata.bind = engine
 def checkItem(item_title, category_title):
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
+    print category_title
     category = session.query(Category).filter_by(title=category_title).one()
     check = session.query(Item.id).filter(
         Item.title == item_title).filter(Item.category == category)
@@ -219,7 +220,6 @@ def newItem():
         if checkItem(request.form['title'], request.form['category']):
             flash("Item already exists!")
             catalog = session.query(Category).all()
-            session.close()
             return render_template('newitem.html', category=catalog)
         else:
             category = session.query(Category).filter_by(
@@ -230,13 +230,11 @@ def newItem():
                            date_time=now.strftime("%Y-%m-%d %H:%M"))
             session.add(newItem)
             session.commit()
-            session.close()
             return redirect(url_for('showCatalog'))
     else:
         DBSession = sessionmaker(bind=engine)
         session = DBSession()
         catalog = session.query(Category).all()
-        session.close()
         return render_template('newitem.html', category=catalog)
 
 
@@ -269,7 +267,6 @@ def editItem(category_title, item_title):
                 editItem.category_id = editCategory.id
             session.add(editItem)
             session.commit()
-            session.close()
             return redirect(url_for('showItem',
                             category_title=editItem.category.title,
                             item_title=editItem.title))
@@ -294,7 +291,6 @@ def deleteItem(item_title, category_title):
     if request.method == 'POST':
         session.delete(itemToDelete)
         session.commit()
-        session.close()
         return redirect(url_for('showCatalog'))
     else:
         return render_template('deleteitem.html',
